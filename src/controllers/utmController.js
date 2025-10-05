@@ -1,7 +1,5 @@
+const utmService = require('../services/utmService');
 const { validateUtmParams } = require('../utils/validators');
-const { generateUtmUrl } = require('../services/utmService');
-const { createShortUrl } = require('../services/shortenerService');
-const { generateQRCode } = require('../services/qrService');
 
 /**
  * Создание UTM-метки
@@ -15,14 +13,13 @@ async function generateUtm(req, res) {
       utm_medium, 
       utm_campaign, 
       utm_term, 
-      utm_content,
-      create_short_url = true,
-      generate_qr = true
+      utm_content
     } = req.body;
 
     // Валидация входных данных
     if (!original_url) {
       return res.status(400).json({
+        success: false,
         error: 'Требуется original_url'
       });
     }
@@ -36,13 +33,14 @@ async function generateUtm(req, res) {
 
     if (!validation.valid) {
       return res.status(400).json({
+        success: false,
         error: 'Ошибка валидации',
         details: validation.errors
       });
     }
 
-    // Генерируем полную UTM ссылку
-    const fullUrl = generateUtmUrl({
+    // Генерируем UTM-метку через сервис
+    const result = await utmService.generateUTM({
       original_url,
       utm_source,
       utm_medium,
@@ -50,35 +48,6 @@ async function generateUtm(req, res) {
       utm_term,
       utm_content
     });
-
-    // Результат
-    const result = {
-      original_url,
-      full_url: fullUrl,
-      utm_params: {
-        source: utm_source,
-        medium: utm_medium,
-        campaign: utm_campaign,
-        term: utm_term || null,
-        content: utm_content || null
-      },
-      created_at: new Date().toISOString()
-    };
-
-    // Создаём короткую ссылку (если нужно)
-    if (create_short_url) {
-      const shortUrlData = createShortUrl(fullUrl);
-      result.short_url = shortUrlData.short_url;
-      result.short_slug = shortUrlData.slug;
-    }
-
-    // Генерируем QR-код (если нужно)
-    if (generate_qr) {
-      const qrCode = await generateQRCode(
-        create_short_url ? result.short_url : fullUrl
-      );
-      result.qr_code = qrCode.data_url;
-    }
 
     // Отправляем успешный ответ
     res.status(200).json({
@@ -89,6 +58,7 @@ async function generateUtm(req, res) {
   } catch (error) {
     console.error('Error in generateUtm:', error);
     res.status(500).json({
+      success: false,
       error: 'Ошибка создания UTM-метки',
       message: error.message
     });
@@ -123,7 +93,6 @@ function validateUrl(req, res) {
         error: validation.error
       });
     }
-
   } catch (error) {
     res.status(500).json({
       error: 'Ошибка валидации',
