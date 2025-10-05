@@ -6,31 +6,36 @@ class UTMService {
   }
 
   async shortenUrl(longUrl) {
+    console.log('Attempting to shorten URL:', longUrl);
+    
+    // Пробуем clck.ru (российский сервис)
     try {
-      // Пробуем v.gd сначала
-      const vgdResponse = await fetch(`https://v.gd/create.php?format=json&url=${encodeURIComponent(longUrl)}`);
-      const vgdData = await vgdResponse.json();
-      
-      if (vgdData.shorturl) {
-        return vgdData.shorturl;
-      }
-    } catch (error) {
-      console.error('v.gd failed, trying clck.ru:', error);
-    }
-
-    try {
-      // Если v.gd не сработал, пробуем clck.ru
       const clckResponse = await fetch(`https://clck.ru/--?url=${encodeURIComponent(longUrl)}`);
       const clckShortUrl = await clckResponse.text();
       
       if (clckShortUrl && clckShortUrl.startsWith('http')) {
+        console.log('clck.ru success:', clckShortUrl.trim());
         return clckShortUrl.trim();
       }
     } catch (error) {
-      console.error('clck.ru failed:', error);
+      console.error('clck.ru failed:', error.message);
     }
 
-    // Если оба сервиса не сработали, возвращаем оригинальную ссылку
+    // Если clck.ru не сработал, пробуем v.gd
+    try {
+      const vgdResponse = await fetch(`https://v.gd/create.php?format=json&url=${encodeURIComponent(longUrl)}`);
+      const vgdData = await vgdResponse.json();
+      
+      if (vgdData.shorturl) {
+        console.log('v.gd success:', vgdData.shorturl);
+        return vgdData.shorturl;
+      }
+    } catch (error) {
+      console.error('v.gd failed:', error.message);
+    }
+
+    // Если оба не сработали, возвращаем оригинальную ссылку
+    console.log('Both services failed, returning original URL');
     return longUrl;
   }
 
