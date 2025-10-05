@@ -15,8 +15,8 @@ app.use(helmet());
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'https://utm-generator-app-yaron9361-blips-projects.vercel.app', // твой URL с Vercel
-    /\.vercel\.app$/ // разрешить все поддомены vercel.app
+    'https://utm-generator-app-yaron9361-blips-projects.vercel.app',
+    /\.vercel\.app$/
   ],
   credentials: true
 }));
