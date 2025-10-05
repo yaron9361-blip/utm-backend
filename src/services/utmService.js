@@ -6,38 +6,21 @@ class UTMService {
   }
 
   async shortenUrl(longUrl) {
-    console.log('Attempting to shorten URL:', longUrl);
+  try {
+    const response = await fetch(`https://clck.ru/--?url=${encodeURIComponent(longUrl)}`);
+    const shortUrl = await response.text();
     
-    // Пробуем clck.ru (российский сервис)
-    try {
-      const clckResponse = await fetch(`https://clck.ru/--?url=${encodeURIComponent(longUrl)}`);
-      const clckShortUrl = await clckResponse.text();
-      
-      if (clckShortUrl && clckShortUrl.startsWith('http')) {
-        console.log('clck.ru success:', clckShortUrl.trim());
-        return clckShortUrl.trim();
-      }
-    } catch (error) {
-      console.error('clck.ru failed:', error.message);
+    if (shortUrl && shortUrl.startsWith('http')) {
+      return shortUrl.trim();
     }
-
-    // Если clck.ru не сработал, пробуем v.gd
-    try {
-      const vgdResponse = await fetch(`https://v.gd/create.php?format=json&url=${encodeURIComponent(longUrl)}`);
-      const vgdData = await vgdResponse.json();
-      
-      if (vgdData.shorturl) {
-        console.log('v.gd success:', vgdData.shorturl);
-        return vgdData.shorturl;
-      }
-    } catch (error) {
-      console.error('v.gd failed:', error.message);
-    }
-
-    // Если оба не сработали, возвращаем оригинальную ссылку
-    console.log('Both services failed, returning original URL');
+    
+    // Если не сработало, возвращаем оригинал
+    return longUrl;
+  } catch (error) {
+    console.error('clck.ru shortening failed:', error);
     return longUrl;
   }
+}
 
   generateQRCode(url) {
     return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
