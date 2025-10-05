@@ -6,7 +6,7 @@ class UTMService {
     this.links = new Map();
   }
 
-  /*async shortenUrl(longUrl) {
+  async shortenUrl(longUrl) {
   try {
     const response = await fetch(`https://clck.ru/--?url=${encodeURIComponent(longUrl)}`);
     const shortUrl = await response.text();
@@ -21,12 +21,8 @@ class UTMService {
     console.error('clck.ru shortening failed:', error);
     return longUrl;
   }
-}*/
-
-  async shortenUrl(longUrl) {
-  // Временно отключено - возвращаем полную ссылку
-  return longUrl;
 }
+
 
   generateQRCode(url) {
     return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
