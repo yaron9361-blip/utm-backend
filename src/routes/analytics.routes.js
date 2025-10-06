@@ -1,13 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db/analytics');
+const analytics = require('../db/analytics');
 
 // Эндпоинт для трекинга событий
 router.post('/track', (req, res) => {
   try {
     const { event_type, user_id, session_id, properties } = req.body;
     
-    // Валидация
     if (!event_type || !session_id) {
       return res.status(400).json({ 
         success: false, 
@@ -15,23 +14,16 @@ router.post('/track', (req, res) => {
       });
     }
     
-    // Вставка события
-    const stmt = db.prepare(`
-      INSERT INTO events (event_type, user_id, session_id, timestamp, properties)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-    
-    const result = stmt.run(
+    const event = analytics.addEvent({
       event_type,
-      user_id || null,
+      user_id: user_id || null,
       session_id,
-      Date.now(),
-      JSON.stringify(properties || {})
-    );
+      properties: properties || {}
+    });
     
     res.json({ 
       success: true, 
-      event_id: result.lastInsertRowid 
+      event_id: event.id 
     });
     
   } catch (error) {
@@ -43,16 +35,15 @@ router.post('/track', (req, res) => {
   }
 });
 
-// Эндпоинт для проверки здоровья аналитики
+// Эндпоинт для проверки здоровья
 router.get('/health', (req, res) => {
   try {
-    const stmt = db.prepare('SELECT COUNT(*) as count FROM events');
-    const result = stmt.get();
+    const count = analytics.getCount();
     
     res.json({
       success: true,
-      total_events: result.count,
-      database: 'connected'
+      total_events: count,
+      storage: 'json_file'
     });
   } catch (error) {
     res.status(500).json({

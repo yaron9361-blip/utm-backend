@@ -1,31 +1,62 @@
-const Database = require('better-sqlite3');
+const fs = require('fs');
 const path = require('path');
 
-// Создаём БД в папке db
-const dbPath = path.join(__dirname, 'analytics.db');
-const db = new Database(dbPath);
+const DATA_DIR = path.join(__dirname, 'data');
+const EVENTS_FILE = path.join(DATA_DIR, 'events.json');
 
-// Включаем WAL режим для лучшей производительности
-db.pragma('journal_mode = WAL');
+// Создаём папку если её нет
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
 
-// Создаём таблицу событий
-db.exec(`
-  CREATE TABLE IF NOT EXISTS events (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    event_type TEXT NOT NULL,
-    user_id TEXT,
-    session_id TEXT NOT NULL,
-    timestamp INTEGER NOT NULL,
-    properties TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-  
-  CREATE INDEX IF NOT EXISTS idx_event_type ON events(event_type);
-  CREATE INDEX IF NOT EXISTS idx_timestamp ON events(timestamp);
-  CREATE INDEX IF NOT EXISTS idx_user_id ON events(user_id);
-  CREATE INDEX IF NOT EXISTS idx_session_id ON events(session_id);
-`);
+// Создаём файл если его нет
+if (!fs.existsSync(EVENTS_FILE)) {
+  fs.writeFileSync(EVENTS_FILE, JSON.stringify([], null, 2));
+}
 
-console.log('Analytics database initialized at:', dbPath);
+// Функции для работы с данными
+const analytics = {
+  // Добавить событие
+  addEvent(event) {
+    const events = this.getEvents();
+    events.push({
+      id: Date.now() + Math.random().toString(36).substr(2, 9),
+      ...event,
+      timestamp: Date.now(),
+      created_at: new Date().toISOString()
+    });
+    fs.writeFileSync(EVENTS_FILE, JSON.stringify(events, null, 2));
+    return events[events.length - 1];
+  },
 
-module.exports = db;
+  // Получить все события
+  getEvents() {
+    try {
+      const data = fs.readFileSync(EVENTS_FILE, 'utf8');
+      return JSON.parse(data);
+    } catch (error) {
+      return [];
+    }
+  },
+
+  // Получить количество событий
+  getCount() {
+    return this.getEvents().length;
+  },
+
+  // Получить события по типу
+  getEventsByType(eventType) {
+    const events = this.getEvents();
+    return events.filter(e => e.event_type === eventType);
+  },
+
+  // Получить события за период
+  getEventsByDateRange(startTime, endTime) {
+    const events = this.getEvents();
+    return events.filter(e => e.timestamp >= startTime && e.timestamp <= endTime);
+  }
+};
+
+console.log('Analytics JSON storage initialized');
+
+module.exports = analytics;
