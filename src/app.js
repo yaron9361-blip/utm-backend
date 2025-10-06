@@ -3,8 +3,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
-
 const app = express();
+const analyticsRoutes = require('./routes/analytics.routes');
 
 // ===== MIDDLEWARE =====
 
@@ -62,6 +62,7 @@ app.get('/', (req, res) => {
 
 // API Routes
 app.use('/api/utm', require('./routes/utm.routes'));
+app.use('/api/analytics', analyticsRoutes);
 
 // Short URL redirects
 app.use('/s', require('./routes/redirect.routes'));
